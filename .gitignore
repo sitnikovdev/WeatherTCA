@@ -1,0 +1,15 @@
+# Tuist generated — не коммитить
+*.xcodeproj
+*.xcworkspace
+!*.xcworkspace/contents.xcworkspacedata
+
+# Tuist / SPM
+.build/
+.tuist-cache/
+Derived/
+
+# Xcode
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.DS_Store

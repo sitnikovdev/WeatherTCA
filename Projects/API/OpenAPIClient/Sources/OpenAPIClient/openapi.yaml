@@ -1,0 +1,136 @@
+openapi: "3.1.0"
+info:
+  title: OpenWeatherMap API
+  version: "2.5"
+servers:
+  - url: https://api.openweathermap.org/data/2.5
+    description: OpenWeatherMap production
+
+paths:
+
+  /weather:
+    get:
+      operationId: getWeather
+      summary: Current weather by city name
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+          description: City name
+        - name: appid
+          in: query
+          required: true
+          schema: { type: string }
+          description: API key
+        - name: units
+          in: query
+          required: false
+          schema: { type: string, default: "metric" }
+          description: "metric | imperial | standard"
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WeatherDTO" }
+
+  /forecast:
+    get:
+      operationId: getForecast
+      summary: 5-day / 3-hour forecast by city name
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema: { type: string }
+        - name: appid
+          in: query
+          required: true
+          schema: { type: string }
+        - name: units
+          in: query
+          required: false
+          schema: { type: string, default: "metric" }
+        - name: cnt
+          in: query
+          required: false
+          schema: { type: integer, default: 40 }
+          description: Number of 3-hour steps (max 40)
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ForecastDTO" }
+
+components:
+  schemas:
+
+    WeatherDTO:
+      type: object
+      required: [name, main, weather]
+      properties:
+        name:
+          type: string
+          description: City name
+        main:
+          $ref: "#/components/schemas/MainDTO"
+        weather:
+          type: array
+          items: { $ref: "#/components/schemas/WeatherConditionDTO" }
+
+    ForecastDTO:
+      type: object
+      required: [list, city]
+      properties:
+        city:
+          $ref: "#/components/schemas/CityDTO"
+        list:
+          type: array
+          items: { $ref: "#/components/schemas/ForecastItemDTO" }
+
+    MainDTO:
+      type: object
+      required: [temp, feels_like, humidity]
+      properties:
+        temp:
+          type: number
+          format: double
+        feels_like:
+          type: number
+          format: double
+        humidity:
+          type: integer
+
+    WeatherConditionDTO:
+      type: object
+      required: [description]
+      properties:
+        description:
+          type: string
+        icon:
+          type: string
+
+    ForecastItemDTO:
+      type: object
+      required: [dt, main, weather]
+      properties:
+        dt:
+          type: integer
+          format: int64
+          description: Unix timestamp UTC
+        main:
+          $ref: "#/components/schemas/MainDTO"
+        weather:
+          type: array
+          items: { $ref: "#/components/schemas/WeatherConditionDTO" }
+
+    CityDTO:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        country:
+          type: string
