@@ -21,10 +21,7 @@ extension WeatherClient: DependencyKey {
     public static var liveValue: WeatherClient {
         // URL берётся из openapi.yaml servers[0].url
         let serverURL = URL(string: "https://api.openweathermap.org/data/2.5")!
-        // TODO: перенести apiKey в конфиг / Secrets (не хранить в коде)
-        // ⚠️  ЗАМЕНИ НА РЕАЛЬНЫЙ КЛЮЧ: https://home.openweathermap.org/api_keys
-        // После регистрации ключ активируется в течение 2 часов.
-        let apiKey = "ec4b779c6f354c4cfb9b99e3de5c069c"
+        let apiKey = Bundle.main.object(forInfoDictionaryKey: "WEATHER_API_KEY") as? String ?? ""
 
         // WeatherNetworkClient может бросить при некорректном URL —
         // в production это невозможно, поэтому try! оправдан.

@@ -13,3 +13,5 @@ DerivedData/
 *.xcuserstate
 xcuserdata/
 .DS_Store
+Projects/App/Configurations/Debug.xcconfig
+Projects/App/Configurations/Release.xcconfig

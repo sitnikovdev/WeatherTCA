@@ -10,7 +10,16 @@ let project = Project.module(
                 .project(target: "WeatherFeature", path: "../Features/Weather"),
                 // CoreUI и Networking подтягиваются транзитивно
                 // через WeatherFeature — не линкуем дважды
-            ]
+            ],
+            additionalInfoPlist: [
+                "WEATHER_API_KEY": "$(WEATHER_API_KEY)"
+            ],
+            settings: .settings(
+                configurations: [
+                    .debug(name: "Debug", xcconfig: "Configurations/Debug.xcconfig"),
+                    .release(name: "Release", xcconfig: "Configurations/Release.xcconfig"),
+                ]
+            )
         ),
     ]
 )

@@ -5,7 +5,9 @@ public extension Target {
     // ── iOS App ────────────────────────────────────────────
     static func app(
         name: String,
-        dependencies: [TargetDependency] = []
+        dependencies: [TargetDependency] = [],
+        additionalInfoPlist: [String: Plist.Value] = [:],
+        settings: Settings? = nil
     ) -> Target {
         .target(
             name: name,
@@ -28,10 +30,11 @@ public extension Target {
                         ]
                     ]
                 ],
-            ]),
+            ].merging(additionalInfoPlist) { _, new in new }),
             sources: ["Sources/\(name)/**"],
             resources: ["Resources/**"],
-            dependencies: dependencies
+            dependencies: dependencies,
+            settings: settings
         )
     }
 
