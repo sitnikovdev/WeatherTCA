@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.2
 import PackageDescription
 
 #if TUIST
@@ -24,12 +24,7 @@ let package = Package(
         // TCA
         .package(
             url: "https://github.com/pointfreeco/swift-composable-architecture",
-            from: "1.15.0"
-        ),
-        // Swift OpenAPI Generator — build-tool plugin (кодогенерация из openapi.yaml)
-        .package(
-            url: "https://github.com/apple/swift-openapi-generator",
-            from: "1.3.0"
+            from: "1.25.5"
         ),
         // Протоколы Client / Transport / Middleware — нужны в рантайме
         .package(
