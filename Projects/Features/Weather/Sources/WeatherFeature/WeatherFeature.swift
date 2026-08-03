@@ -2,6 +2,7 @@ import ComposableArchitecture
 import Foundation
 import Models
 import Networking
+import OpenAPIClient
 
 // MARK: - WeatherClient dependency
 //
@@ -19,26 +20,33 @@ public struct WeatherClient: Sendable {
 extension WeatherClient: DependencyKey {
     /// Live-реализация: WeatherNetworkClient → WeatherAPIClient → OpenAPI
     public static var liveValue: WeatherClient {
-        // URL берётся из openapi.yaml servers[0].url
         let serverURL = URL(string: "https://api.openweathermap.org/data/2.5")!
         let apiKey = Bundle.main.object(forInfoDictionaryKey: "WEATHER_API_KEY") as? String ?? ""
 
-        // WeatherNetworkClient может бросить при некорректном URL —
-        // в production это невозможно, поэтому try! оправдан.
         let networkClient = WeatherNetworkClient(
             serverURL: serverURL,
             apiKey: apiKey
         )
 
         return WeatherClient { city in
-            let payload = try await networkClient.fetchWeather(city: city, apiKey: apiKey)
-            return WeatherResponse(
-                fromPayloadCity: payload.city,
-                temperature: payload.temperature,
-                feelsLike: payload.feelsLike,
-                humidity: payload.humidity,
-                description: payload.description
-            )
+            do {
+                let payload = try await networkClient.fetchWeather(city: city, apiKey: apiKey)
+                return WeatherResponse(
+                    fromPayloadCity: payload.city,
+                    temperature: payload.temperature,
+                    feelsLike: payload.feelsLike,
+                    humidity: payload.humidity,
+                    description: payload.description
+                )
+            } catch let apiError as WeatherAPIError {
+                throw WeatherError(fromAPIError: apiError)
+            } catch is DecodingError {
+                throw WeatherError.decodingFailed
+            } catch is URLError {
+                throw WeatherError.network
+            } catch {
+                throw WeatherError.unknown
+            }
         }
     }
 
@@ -63,6 +71,27 @@ extension DependencyValues {
     }
 }
 
+// MARK: - WeatherError mapping (WeatherAPIError → WeatherError)
+//
+// Живёт здесь, а не в Models, потому что Models не должен зависеть
+// от OpenAPIClient — это единственное место, которое видит оба типа.
+
+extension WeatherError {
+    init(fromAPIError apiError: WeatherAPIError) {
+        switch apiError {
+        case .undocumentedResponse(let code):
+            switch code {
+            case 401: self = .invalidAPIKey
+            case 404: self = .cityNotFound
+            case 429: self = .rateLimited
+            default:  self = .unknown
+            }
+        case .missingData:
+            self = .unknown
+        }
+    }
+}
+
 // MARK: - WeatherFeature Reducer
 
 @Reducer
@@ -80,10 +109,10 @@ public struct WeatherFeature {
         public init() {}
     }
 
-    public enum Action {
+    public enum Action: Equatable {
         case cityChanged(String)
         case fetchWeatherTapped
-        case weatherResponse(Result<WeatherResponse, Error>)
+        case weatherResponse(Result<WeatherResponse, WeatherError>)
     }
 
     @Dependency(\.weatherClient) var weatherClient
@@ -105,9 +134,14 @@ public struct WeatherFeature {
                 state.errorMessage = nil
                 let city = state.city
                 return .run { send in
-                    await send(.weatherResponse(
-                        Result { try await weatherClient.fetchWeather(city) }
-                    ))
+                    do {
+                        let response = try await weatherClient.fetchWeather(city)
+                        await send(.weatherResponse(.success(response)))
+                    } catch let weatherError as WeatherError {
+                        await send(.weatherResponse(.failure(weatherError)))
+                    } catch {
+                        await send(.weatherResponse(.failure(.unknown)))
+                    }
                 }
 
             case let .weatherResponse(.success(response)):
@@ -117,7 +151,7 @@ public struct WeatherFeature {
 
             case let .weatherResponse(.failure(error)):
                 state.isLoading = false
-                state.errorMessage = error.localizedDescription
+                state.errorMessage = error.errorDescription
                 return .none
             }
         }
