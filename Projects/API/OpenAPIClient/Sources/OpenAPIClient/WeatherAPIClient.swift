@@ -97,19 +97,3 @@ public enum WeatherAPIError: Error, Equatable, Sendable {
     case undocumentedResponse(statusCode: Int)
     case missingData
 }
-
-extension WeatherAPIError: LocalizedError {
-    public var errorDescription: String? {
-        switch self {
-        case .undocumentedResponse(let code):
-            switch code {
-            case 401: return "Неверный API-ключ (401). Замени YOUR_API_KEY в WeatherFeature.swift."
-            case 404: return "Город не найден (404). Проверь название."
-            case 429: return "Превышен лимит запросов (429). Подожди минуту."
-            default:  return "Ошибка сервера: HTTP \(code)."
-            }
-        case .missingData:
-            return "Сервер вернул пустой ответ."
-        }
-    }
-}
